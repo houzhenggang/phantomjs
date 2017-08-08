@@ -1,4 +1,4 @@
-/*
+﻿/*
   This file is part of the PhantomJS project from Ofi Labs.
 
   Copyright (C) 2011 Ariya Hidayat <ariya.hidayat@gmail.com>
@@ -30,10 +30,7 @@
 
 #include "webpage.h"
 
-#include <QApplication>
 #include <QBuffer>
-#include <QContextMenuEvent>
-#include <QDateTime>
 #include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
@@ -41,17 +38,12 @@
 #include <QImageWriter>
 #include <QKeyEvent>
 #include <QMapIterator>
-#include <QMouseEvent>
 #include <QNetworkAccessManager>
-#include <QNetworkCookie>
-#include <QNetworkProxy>
 #include <QNetworkRequest>
-#include <QPainter>
 #include <QScreen>
 #include <QUrl>
 #include <QUuid>
 #include <QWebElement>
-#include <QWebHistory>
 #include <QWebHistoryItem>
 #include <QWebFrame>
 #include <QWebInspector>
@@ -172,14 +164,23 @@ protected:
 
     void javaScriptConsoleMessage(const QString& message, int lineNumber, const QString& sourceID)
     {
-        Q_UNUSED(lineNumber);
-        Q_UNUSED(sourceID);
-        emit m_webPage->javaScriptConsoleMessageSent(message);
+        emit m_webPage->javaScriptConsoleMessageSent(message, lineNumber, sourceID);
     }
 
     void javaScriptError(const QString& message, int lineNumber, const QString& sourceID, const QString& stack)
     {
         emit m_webPage->javaScriptErrorSent(message, lineNumber, sourceID, stack);
+    }
+
+    void consoleMessageReceived(MessageSource source, MessageLevel level, const QString& message, int lineNumber, const QString& sourceID)
+    {
+        Q_UNUSED(source);
+
+        if (level == ErrorMessageLevel) {
+            emit m_webPage->javaScriptErrorSent(message, lineNumber, sourceID, QString());
+        } else {
+            emit m_webPage->javaScriptConsoleMessageSent(message, lineNumber, sourceID);
+        }
     }
 
     QString userAgentForUrl(const QUrl& url) const
@@ -435,11 +436,6 @@ WebPage::WebPage(QObject* parent, const QUrl& baseUrl)
             SIGNAL(resourceError(QVariant)));
     connect(m_networkAccessManager, SIGNAL(resourceTimeout(QVariant)),
             SIGNAL(resourceTimeout(QVariant)));
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
-    connect(m_networkAccessManager, SIGNAL(resourceRedirect(QVariant)),
-            SIGNAL(resourceRedirect(QVariant)));
-#endif
 
     m_dpi = qRound(QApplication::primaryScreen()->logicalDotsPerInch());
     m_customWebPage->setViewportSize(QSize(400, 300));
@@ -765,12 +761,11 @@ QVariantMap WebPage::paperSize() const
 
 QVariant WebPage::evaluateJavaScript(const QString& code)
 {
-    QVariant evalResult;
-    QString function = "(" + code + ")()";
+	QString function = "(" + code + ")()";
 
     qDebug() << "WebPage - evaluateJavaScript" << function;
 
-    evalResult = m_currentFrame->evaluateJavaScript(function);
+    QVariant evalResult = m_currentFrame->evaluateJavaScript(function);
 
     qDebug() << "WebPage - evaluateJavaScript result" << evalResult;
 
@@ -1797,6 +1792,16 @@ void WebPage::stopJavaScript()
 void WebPage::clearMemoryCache()
 {
     QWebSettings::clearMemoryCaches();
+}
+
+qreal WebPage::devicePixelRatio() const
+{
+    return m_customWebPage->devicePixelRatio();
+}
+
+void WebPage::setDevicePixelRatio(qreal devicePixelRatio)
+{
+    m_customWebPage->setDevicePixelRatio(devicePixelRatio);
 }
 
 #include "webpage.moc"

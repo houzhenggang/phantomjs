@@ -1,4 +1,4 @@
-/*
+﻿/*
   This file is part of the PhantomJS project from Ofi Labs.
 
   Copyright (C) 2011 Ariya Hidayat <ariya.hidayat@gmail.com>
@@ -81,6 +81,7 @@ class WebPage : public QObject
     Q_PROPERTY(int framesCount READ framesCount)
     Q_PROPERTY(QString focusedFrameName READ focusedFrameName)
     Q_PROPERTY(QObject* cookieJar READ cookieJar WRITE setCookieJarFromQObject)
+    Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio WRITE setDevicePixelRatio)
 
 public:
     WebPage(QObject* parent, const QUrl& baseUrl = QUrl());
@@ -488,21 +489,20 @@ public slots:
     qreal stringToPointSize(const QString&) const;
     qreal printMargin(const QVariantMap&, const QString&);
     qreal getHeight(const QVariantMap&, const QString&) const;
+    qreal devicePixelRatio() const;
+    void setDevicePixelRatio(qreal devicePixelRatio);
 
 signals:
     void initialized();
     void loadStarted();
     void loadFinished(const QString& status);
     void javaScriptAlertSent(const QString& msg);
-    void javaScriptConsoleMessageSent(const QString& message);
+    void javaScriptConsoleMessageSent(const QString& message, int lineNumber = -1, const QString& sourceID = QString());
     void javaScriptErrorSent(const QString& msg, int lineNumber, const QString& sourceID, const QString& stack);
     void resourceRequested(const QVariant& requestData, QObject* request);
     void resourceReceived(const QVariant& resource);
     void resourceError(const QVariant& errorData);
     void resourceTimeout(const QVariant& errorData);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
-    void resourceRedirect(const QVariant& data);
-#endif
     void urlChanged(const QString& url);
     void navigationRequested(const QString& url, const QString& navigationType, bool navigationLocked, bool isMainFrame);
     void rawPageCreated(QObject* page);
